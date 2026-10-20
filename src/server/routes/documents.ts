@@ -21,8 +21,8 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/documents/upload - Upload new document
-router.post('/upload', requireAuth, async (req: Request, res: Response) => {
+// POST /api/documents or /api/documents/upload - Upload new document
+router.post(['/', '/upload'], requireAuth, async (req: Request, res: Response) => {
   try {
     const {
       title,

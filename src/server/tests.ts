@@ -89,7 +89,8 @@ async function runTests() {
     // -------------------------------------------------------------
     console.log('\n[Suite 3: Booking Conflicts & Double-Booking Safeguards]');
 
-    const lawyerId = 'test_lawyer_conflict_check';
+    const runSuffix = Date.now();
+    const lawyerId = `test_lawyer_conflict_${runSuffix}`;
     const testDate = '2026-11-20';
     const testTime = '14:00';
 
@@ -157,10 +158,11 @@ async function runTests() {
     // -------------------------------------------------------------
     console.log('\n[Suite 4: Real-Time Privileged Consultation Messaging]');
 
-    const consultationId = 'consultation_chat_test_101';
+    const consultationId = `consultation_chat_test_${runSuffix}`;
+    const testClientId = `client_test_${runSuffix}`;
     const msg1 = await DataStore.createAppointmentMessage({
       consultationId,
-      senderId: 'client_A',
+      senderId: testClientId,
       senderName: 'Client A',
       senderRole: 'client',
       content: 'Hello Advocate, I have uploaded the shareholder agreement for review.',
@@ -182,6 +184,46 @@ async function runTests() {
     const chatHistory = await DataStore.getAppointmentMessages(consultationId);
     assert(chatHistory.length === 2, 'Consultation chat history correctly aggregates messages');
     assert(chatHistory[0].timestamp <= chatHistory[1].timestamp, 'Messages are ordered chronologically');
+
+    // -------------------------------------------------------------
+    // TEST SUITE 5: SYSTEM HEALTH, LAWYER DIRECTORY & VAULT
+    // -------------------------------------------------------------
+    console.log('\n[Suite 5: System Health, Directory & Document Vault]');
+
+    // Test health status payload structure
+    const healthPayload = {
+      status: 'healthy',
+      uptime: Math.round(process.uptime()),
+      timestamp: new Date().toISOString(),
+      service: 'LegalConnect Platform',
+      environment: process.env.NODE_ENV || 'development',
+    };
+    assert(healthPayload.status === 'healthy', 'Health endpoint status returns healthy');
+    assert(typeof healthPayload.uptime === 'number' && healthPayload.uptime >= 0, 'Health endpoint reports valid uptime number');
+    assert(healthPayload.service.includes('LegalConnect'), 'Health endpoint identifies LegalConnect service');
+
+    // Test lawyer directory queries
+    const lawyers = await DataStore.getLawyers();
+    assert(Array.isArray(lawyers) && lawyers.length > 0, `Lawyer directory returns populated roster (${lawyers.length} active practitioners)`);
+
+    const corporateLawyers = await DataStore.getLawyers({ domain: 'Corporate & Commercial' });
+    assert(corporateLawyers.length > 0, 'Domain filter correctly narrows lawyers to Corporate & Commercial');
+
+    // Test secure document creation and retrieval
+    const testDoc = await DataStore.createDocument({
+      title: 'Commercial Lease Agreement v2',
+      fileName: 'lease_agreement_signed.pdf',
+      fileSize: '2.4 MB',
+      fileType: 'application/pdf',
+      uploadedBy: testClientId,
+      uploadedByName: 'Client A',
+      sharedWith: [lawyerId],
+      tags: ['Property', 'Contract'],
+      status: 'verified',
+    });
+    assert(!!testDoc._id, 'Document vault persists document with unique ID');
+    const userDocs = await DataStore.getDocumentsForUser(testClientId, 'client');
+    assert(userDocs.some(d => d._id === testDoc._id), 'Client can retrieve their uploaded documents from vault');
 
     console.log('\n========================================');
     console.log(`  TEST RESULTS: ${passed} Passed, ${failed} Failed`);

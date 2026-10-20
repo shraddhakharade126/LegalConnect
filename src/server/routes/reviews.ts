@@ -20,12 +20,16 @@ router.post('/', requireAuth, requireRole('client'), async (req: Request, res: R
   try {
     const { consultationId, rating, title, comment } = req.body;
 
-    if (!consultationId || !rating || !title || !comment) {
+    if (!consultationId || !rating || !comment) {
       res.status(400).json({
-        error: 'Consultation ID, rating (1-5), title, and review comments are required.',
+        error: 'Consultation ID, rating (1-5), and review comments are required.',
       });
       return;
     }
+
+    const reviewTitle = (title && typeof title === 'string' && title.trim())
+      ? title.trim()
+      : 'Client Legal Consultation Review';
 
     const numRating = Number(rating);
     if (numRating < 1 || numRating > 5) {
@@ -44,9 +48,9 @@ router.post('/', requireAuth, requireRole('client'), async (req: Request, res: R
       return;
     }
 
-    if (consultation.status !== 'completed') {
+    if (consultation.status !== 'completed' && consultation.status !== 'confirmed') {
       res.status(400).json({
-        error: 'Only completed consultations can be reviewed.',
+        error: 'Only confirmed or completed consultations can be reviewed.',
       });
       return;
     }
@@ -64,7 +68,7 @@ router.post('/', requireAuth, requireRole('client'), async (req: Request, res: R
       clientId: req.user!.userId,
       clientName: req.user!.name,
       rating: numRating,
-      title: title.trim(),
+      title: reviewTitle,
       comment: comment.trim(),
       isVerifiedConsultation: true,
     });

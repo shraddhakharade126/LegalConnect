@@ -12,7 +12,7 @@ This guide walks you through deploying the **LegalConnect (Online Legal Consulta
 | **Runtime / Environment** | **Node** |
 | **Build Command** | `npm install && npm run build` |
 | **Start Command** | `npm start` |
-| **Health Check Path** | `/api/system/status` |
+| **Health Check Path** | `/health` (or `/api/health`) |
 | **Instance Type** | **Free** (or Starter/Standard) |
 
 ---

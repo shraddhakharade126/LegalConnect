@@ -4,8 +4,8 @@ import { requireAuth, optionalAuth } from '../middleware/auth.ts';
 
 const router = Router();
 
-// GET /api/appointments - List appointments (supports authenticated user or public slot checking for lawyer)
-router.get('/', optionalAuth, async (req: Request, res: Response) => {
+// GET /api/appointments or /api/appointments/client - List appointments
+router.get(['/', '/client'], optionalAuth, async (req: Request, res: Response) => {
   try {
     const { status, date, lawyerId: queryLawyerId } = req.query;
 
@@ -134,8 +134,8 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/appointments/book - Client books appointment
-router.post('/book', requireAuth, async (req: Request, res: Response) => {
+// POST /api/appointments or /api/appointments/book - Client books appointment
+router.post(['/', '/book'], requireAuth, async (req: Request, res: Response) => {
   try {
     const {
       lawyerId,
@@ -149,9 +149,11 @@ router.post('/book', requireAuth, async (req: Request, res: Response) => {
       aiBrief,
     } = req.body;
 
-    if (!lawyerId || !appointmentDate || !startTime || !issueSummary) {
+    const summary = (issueSummary || req.body.notes || req.body.reason || 'Legal consultation request').trim();
+
+    if (!lawyerId || !appointmentDate || !startTime) {
       res.status(400).json({
-        error: 'Lawyer ID, appointment date, start time, and issue summary are required.',
+        error: 'Lawyer ID, appointment date, and start time are required.',
       });
       return;
     }
@@ -222,7 +224,7 @@ router.post('/book', requireAuth, async (req: Request, res: Response) => {
       consultationType,
       fee: lawyer.consultationFee,
       paymentStatus: 'paid', // Demo flow processes consultation payment immediately
-      issueSummary: issueSummary.trim(),
+      issueSummary: summary,
       clientQuestions: Array.isArray(clientQuestions) ? clientQuestions : [],
       aiBrief: aiBrief || undefined,
       meetingLink:

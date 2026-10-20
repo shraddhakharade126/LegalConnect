@@ -240,25 +240,26 @@ export const DataStore = {
     maxFee?: number;
     minRating?: number;
     sort?: string;
-  }): Promise<any[]> {
+  } = {}): Promise<any[]> {
+    const f = filters || {};
     if (isMongooseConnected()) {
       const query: any = {};
-      if (filters.status) query.verificationStatus = filters.status;
-      if (filters.domain) {
-        query.$or = [{ primaryDomain: filters.domain }, { practiceAreas: filters.domain }];
+      if (f.status) query.verificationStatus = f.status;
+      if (f.domain) {
+        query.$or = [{ primaryDomain: f.domain }, { practiceAreas: f.domain }];
       }
-      if (filters.city) {
-        query.city = new RegExp(filters.city, 'i');
+      if (f.city) {
+        query.city = new RegExp(f.city, 'i');
       }
-      if (filters.minExp) query.experienceYears = { $gte: Number(filters.minExp) };
-      if (filters.maxFee) query.consultationFee = { $lte: Number(filters.maxFee) };
-      if (filters.minRating) query.rating = { $gte: Number(filters.minRating) };
+      if (f.minExp) query.experienceYears = { $gte: Number(f.minExp) };
+      if (f.maxFee) query.consultationFee = { $lte: Number(f.maxFee) };
+      if (f.minRating) query.rating = { $gte: Number(f.minRating) };
 
       let sortQuery: any = { rating: -1 };
-      if (filters.sort === 'fee_asc') sortQuery = { consultationFee: 1 };
-      if (filters.sort === 'fee_desc') sortQuery = { consultationFee: -1 };
-      if (filters.sort === 'exp_desc') sortQuery = { experienceYears: -1 };
-      if (filters.sort === 'reviews') sortQuery = { reviewCount: -1 };
+      if (f.sort === 'fee_asc') sortQuery = { consultationFee: 1 };
+      if (f.sort === 'fee_desc') sortQuery = { consultationFee: -1 };
+      if (f.sort === 'exp_desc') sortQuery = { experienceYears: -1 };
+      if (f.sort === 'reviews') sortQuery = { reviewCount: -1 };
 
       const lawyers = await LawyerModel.find(query).sort(sortQuery).lean();
 
@@ -279,32 +280,32 @@ export const DataStore = {
 
     let list = Array.from(memoryStore.lawyers.values());
 
-    if (filters.status) {
-      list = list.filter((l) => l.verificationStatus === filters.status);
+    if (f.status) {
+      list = list.filter((l) => l.verificationStatus === f.status);
     }
-    if (filters.domain && filters.domain !== 'all') {
-      const dom = filters.domain.toLowerCase();
+    if (f.domain && f.domain !== 'all') {
+      const dom = f.domain.toLowerCase();
       list = list.filter(
         (l) =>
           l.primaryDomain?.toLowerCase() === dom ||
           l.practiceAreas?.some((pa: string) => pa.toLowerCase().includes(dom))
       );
     }
-    if (filters.city && filters.city !== 'all') {
-      const c = filters.city.toLowerCase();
+    if (f.city && f.city !== 'all') {
+      const c = f.city.toLowerCase();
       list = list.filter((l) => l.city?.toLowerCase().includes(c) || l.state?.toLowerCase().includes(c));
     }
-    if (filters.minExp) {
-      list = list.filter((l) => l.experienceYears >= Number(filters.minExp));
+    if (f.minExp) {
+      list = list.filter((l) => l.experienceYears >= Number(f.minExp));
     }
-    if (filters.maxFee) {
-      list = list.filter((l) => l.consultationFee <= Number(filters.maxFee));
+    if (f.maxFee) {
+      list = list.filter((l) => l.consultationFee <= Number(f.maxFee));
     }
-    if (filters.minRating) {
-      list = list.filter((l) => l.rating >= Number(filters.minRating));
+    if (f.minRating) {
+      list = list.filter((l) => l.rating >= Number(f.minRating));
     }
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
+    if (f.search) {
+      const q = f.search.toLowerCase();
       list = list.filter((l) => {
         const user = memoryStore.users.get(l.userId);
         const nameMatch = user?.name?.toLowerCase().includes(q);
@@ -316,13 +317,13 @@ export const DataStore = {
     }
 
     // Sorting
-    if (filters.sort === 'fee_asc') {
+    if (f.sort === 'fee_asc') {
       list.sort((a, b) => a.consultationFee - b.consultationFee);
-    } else if (filters.sort === 'fee_desc') {
+    } else if (f.sort === 'fee_desc') {
       list.sort((a, b) => b.consultationFee - a.consultationFee);
-    } else if (filters.sort === 'exp_desc') {
+    } else if (f.sort === 'exp_desc') {
       list.sort((a, b) => b.experienceYears - a.experienceYears);
-    } else if (filters.sort === 'reviews') {
+    } else if (f.sort === 'reviews') {
       list.sort((a, b) => b.reviewCount - a.reviewCount);
     } else {
       // default: highest rating
@@ -598,7 +599,7 @@ export const DataStore = {
     return { ...doc };
   },
 
-  async getDocumentsForUser(userId: string, role: UserRole, lawyerId?: string): Promise<any[]> {
+  async getDocumentsForUser(userId: string, role: UserRole = 'client', lawyerId?: string): Promise<any[]> {
     if (isMongooseConnected()) {
       if (role === 'admin') {
         return await DocumentModel.find().sort({ createdAt: -1 }).lean();

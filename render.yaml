@@ -4,9 +4,9 @@ services:
     runtime: node
     plan: free
     region: oregon
-    buildCommand: npm install && npm run build
+    buildCommand: (bun install && bun run build) || (npm install && npm run build)
     startCommand: npm start
-    healthCheckPath: /api/system/status
+    healthCheckPath: /health
     autoDeploy: true
     envVars:
       - key: NODE_ENV
