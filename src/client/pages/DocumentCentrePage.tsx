@@ -176,13 +176,21 @@ export const DocumentCentrePage: React.FC<DocumentCentrePageProps> = ({ navigate
                 <button
                   type="button"
                   onClick={() => {
-                    const blob = new Blob([`LegalConnect Document Archive\nTitle: ${doc.title}\nCategory: ${doc.documentType}\nConfidentiality: ${doc.confidentialityLevel}\nUploaded by: ${doc.uploadedByName}\nTimestamp: ${doc.createdAt}\nAccess granted under attorney-client privilege.`], { type: 'text/plain' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `${doc.title.replace(/\s+/g, '_')}_verified.txt`;
-                    a.click();
-                    URL.revokeObjectURL(url);
+                    if (doc.fileData && doc.fileData.startsWith('data:')) {
+                      const a = document.createElement('a');
+                      a.href = doc.fileData;
+                      const ext = doc.fileType === 'application/pdf' ? 'pdf' : (doc.title.includes('.') ? '' : 'pdf');
+                      a.download = doc.title.includes('.') ? doc.title : `${doc.title.replace(/\s+/g, '_')}.${ext || 'pdf'}`;
+                      a.click();
+                    } else {
+                      const blob = new Blob([`LegalConnect Document Archive\nTitle: ${doc.title}\nCategory: ${doc.documentType}\nConfidentiality: ${doc.confidentialityLevel}\nUploaded by: ${doc.uploadedByName}\nTimestamp: ${doc.createdAt}\nAccess granted under attorney-client privilege.`], { type: 'text/plain' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `${doc.title.replace(/\s+/g, '_')}_verified.txt`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }
                     showToast(`Decrypted copy of "${doc.title}" downloaded.`, 'success');
                   }}
                   className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5"

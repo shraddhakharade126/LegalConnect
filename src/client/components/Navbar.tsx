@@ -13,7 +13,10 @@ import {
   Star,
   CheckCircle,
   Clock,
+  Sun,
+  Moon,
 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext.tsx';
 
 interface NavbarProps {
   currentPath: string;
@@ -22,6 +25,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ currentPath, navigate }) => {
   const { user, lawyer, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const { notifications, unreadCount, markAsRead } = useNotifications();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
@@ -116,7 +120,22 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, navigate }) => {
           </nav>
 
           {/* Right Action Icons & User controls */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Theme Toggle Button */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="p-2 rounded-full text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-5 h-5 text-amber-400" />
+              ) : (
+                <Moon className="w-5 h-5 text-slate-300" />
+              )}
+            </button>
+
             {/* Notifications Dropdown */}
             {user && (
               <div className="relative">

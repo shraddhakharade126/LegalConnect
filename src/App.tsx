@@ -6,6 +6,8 @@ import { DemoAccountsBar } from './client/components/DemoAccountsBar.tsx';
 import { Navbar } from './client/components/Navbar.tsx';
 import { Footer } from './client/components/Footer.tsx';
 
+import { ThemeProvider } from './client/context/ThemeContext.tsx';
+
 // Pages
 import { HomePage } from './client/pages/HomePage.tsx';
 import { LawyerDirectoryPage } from './client/pages/LawyerDirectoryPage.tsx';
@@ -169,7 +171,7 @@ function MainRouter() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100/70 text-slate-900 flex flex-col font-sans selection:bg-amber-400 selection:text-slate-950">
+    <div className="min-h-screen bg-slate-100/70 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-amber-400 selection:text-slate-950 transition-colors">
       {/* 1-Click Role Switcher Sandbox Bar */}
       <DemoAccountsBar />
 
@@ -187,12 +189,14 @@ function MainRouter() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <NotificationProvider>
-        <ToastProvider>
-          <MainRouter />
-        </ToastProvider>
-      </NotificationProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <NotificationProvider>
+          <ToastProvider>
+            <MainRouter />
+          </ToastProvider>
+        </NotificationProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

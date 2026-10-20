@@ -58,6 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setToken(data.token);
       setUser(data.user);
       setLawyer(data.lawyer || null);
+      return data;
     } finally {
       setLoading(false);
     }
@@ -71,6 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setToken(res.token);
       setUser(res.user);
       setLawyer(res.lawyer || null);
+      return res;
     } finally {
       setLoading(false);
     }

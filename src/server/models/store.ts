@@ -10,6 +10,13 @@ import { ReviewModel, IReview } from './Review.ts';
 import { NotificationModel, INotification } from './Notification.ts';
 import { AuditLogModel, IAuditLog } from './AuditLog.ts';
 
+import fs from 'fs';
+import path from 'path';
+
+// Local disk-backed file storage path for durability across server reloads
+const DATA_DIR = path.join(process.cwd(), 'data');
+const DB_FILE_PATH = path.join(DATA_DIR, 'local_db.json');
+
 // In-Memory collections fallback storage
 const memoryStore = {
   users: new Map<string, any>(),
@@ -23,6 +30,56 @@ const memoryStore = {
   auditLogs: new Map<string, any>(),
   messages: new Map<string, any>(),
 };
+
+// Load saved data from disk on startup
+function loadFromDisk(): void {
+  try {
+    if (fs.existsSync(DB_FILE_PATH)) {
+      const raw = fs.readFileSync(DB_FILE_PATH, 'utf-8');
+      const data = JSON.parse(raw);
+      if (data) {
+        if (Array.isArray(data.users)) data.users.forEach((u: any) => memoryStore.users.set(u._id || u.id, u));
+        if (Array.isArray(data.lawyers)) data.lawyers.forEach((l: any) => memoryStore.lawyers.set(l._id || l.id, l));
+        if (Array.isArray(data.legalDomains)) data.legalDomains.forEach((d: any) => memoryStore.legalDomains.set(d._id || d.id, d));
+        if (Array.isArray(data.availability)) data.availability.forEach((a: any) => memoryStore.availability.set(a.lawyerId, a.slots));
+        if (Array.isArray(data.appointments)) data.appointments.forEach((apt: any) => memoryStore.appointments.set(apt._id || apt.id, apt));
+        if (Array.isArray(data.documents)) data.documents.forEach((doc: any) => memoryStore.documents.set(doc._id || doc.id, doc));
+        if (Array.isArray(data.reviews)) data.reviews.forEach((r: any) => memoryStore.reviews.set(r._id || r.id, r));
+        if (Array.isArray(data.notifications)) data.notifications.forEach((n: any) => memoryStore.notifications.set(n._id || n.id, n));
+        if (Array.isArray(data.auditLogs)) data.auditLogs.forEach((al: any) => memoryStore.auditLogs.set(al._id || al.id, al));
+        if (Array.isArray(data.messages)) data.messages.forEach((m: any) => memoryStore.messages.set(m.id || m._id, m));
+      }
+    }
+  } catch (err) {
+    // Graceful startup if file not yet created
+  }
+}
+
+// Initial load
+loadFromDisk();
+
+export function persistToDisk(): void {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    const serialized = {
+      users: Array.from(memoryStore.users.values()),
+      lawyers: Array.from(memoryStore.lawyers.values()),
+      legalDomains: Array.from(memoryStore.legalDomains.values()),
+      availability: Array.from(memoryStore.availability.entries()).map(([lawyerId, slots]) => ({ lawyerId, slots })),
+      appointments: Array.from(memoryStore.appointments.values()),
+      documents: Array.from(memoryStore.documents.values()),
+      reviews: Array.from(memoryStore.reviews.values()),
+      notifications: Array.from(memoryStore.notifications.values()),
+      auditLogs: Array.from(memoryStore.auditLogs.values()),
+      messages: Array.from(memoryStore.messages.values()),
+    };
+    fs.writeFileSync(DB_FILE_PATH, JSON.stringify(serialized, null, 2), 'utf-8');
+  } catch (_err) {
+    // Graceful disk storage fallback
+  }
+}
 
 function isMongooseConnected(): boolean {
   return mongoose.connection.readyState === 1;
@@ -99,6 +156,7 @@ export const DataStore = {
       updatedAt: now,
     };
     memoryStore.users.set(id, newUser);
+    persistToDisk();
     return { ...newUser };
   },
 
@@ -110,6 +168,7 @@ export const DataStore = {
     if (!user) return null;
     const updated = { ...user, ...updates, updatedAt: new Date() };
     memoryStore.users.set(id, updated);
+    persistToDisk();
     return { ...updated };
   },
 
@@ -148,6 +207,7 @@ export const DataStore = {
       updatedAt: now,
     };
     memoryStore.lawyers.set(id, lawyer);
+    persistToDisk();
     return { ...lawyer };
   },
 
@@ -289,6 +349,7 @@ export const DataStore = {
     if (!lawyer) return null;
     const updated = { ...lawyer, ...updates, updatedAt: new Date() };
     memoryStore.lawyers.set(id, updated);
+    persistToDisk();
     return { ...updated };
   },
 
@@ -318,6 +379,7 @@ export const DataStore = {
       updatedAt: new Date(),
     };
     memoryStore.legalDomains.set(id, item);
+    persistToDisk();
     return { ...item };
   },
 
@@ -329,6 +391,7 @@ export const DataStore = {
     if (!item) return null;
     const updated = { ...item, ...updates, updatedAt: new Date() };
     memoryStore.legalDomains.set(id, updated);
+    persistToDisk();
     return { ...updated };
   },
 
@@ -380,6 +443,7 @@ export const DataStore = {
       memoryStore.availability.set(id, obj);
       results.push(obj);
     }
+    persistToDisk();
     return results;
   },
 
@@ -458,6 +522,7 @@ export const DataStore = {
       updatedAt: now,
     };
     memoryStore.appointments.set(id, apt);
+    persistToDisk();
     return { ...apt };
   },
 
@@ -508,6 +573,7 @@ export const DataStore = {
     if (!apt) return null;
     const updated = { ...apt, ...updates, updatedAt: new Date() };
     memoryStore.appointments.set(id, updated);
+    persistToDisk();
     return { ...updated };
   },
 
@@ -528,6 +594,7 @@ export const DataStore = {
       updatedAt: new Date(),
     };
     memoryStore.documents.set(id, doc);
+    persistToDisk();
     return { ...doc };
   },
 
@@ -608,6 +675,7 @@ export const DataStore = {
       lawyer.reviewCount = lawyerReviews.length;
       memoryStore.lawyers.set(data.lawyerId, lawyer);
     }
+    persistToDisk();
     return { ...review };
   },
 
@@ -647,6 +715,7 @@ export const DataStore = {
       updatedAt: new Date(),
     };
     memoryStore.notifications.set(id, notif);
+    persistToDisk();
     return { ...notif };
   },
 
@@ -667,6 +736,7 @@ export const DataStore = {
     const notif = memoryStore.notifications.get(id);
     if (notif && notif.recipientId === userId) {
       notif.read = true;
+      persistToDisk();
       return true;
     }
     return false;
@@ -684,6 +754,7 @@ export const DataStore = {
         count++;
       }
     }
+    persistToDisk();
     return count;
   },
 
@@ -712,6 +783,7 @@ export const DataStore = {
       createdAt: new Date(),
     };
     memoryStore.auditLogs.set(id, log);
+    persistToDisk();
     return { ...log };
   },
 
@@ -805,6 +877,7 @@ export const DataStore = {
       createdAt: new Date().toISOString(),
     };
     memoryStore.messages.set(id, message);
+    persistToDisk();
     return message;
   },
 };

@@ -22,23 +22,36 @@ import {
 import { ConsultationMessage } from '../types/index.ts';
 import firebaseConfig from '../../../firebase-applet-config.json';
 
+// Read environment variables (for Vercel/Netlify hosting) with fallback to firebase-applet-config.json
+const env = import.meta.env || {};
+
+export const effectiveFirebaseConfig = {
+  apiKey: env.VITE_FIREBASE_API_KEY || firebaseConfig.apiKey || '',
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain || '',
+  projectId: env.VITE_FIREBASE_PROJECT_ID || firebaseConfig.projectId || '',
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfig.storageBucket || '',
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfig.messagingSenderId || '',
+  appId: env.VITE_FIREBASE_APP_ID || firebaseConfig.appId || '',
+  firestoreDatabaseId: env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || firebaseConfig.firestoreDatabaseId || '',
+  databaseURL: env.VITE_FIREBASE_DATABASE_URL || (firebaseConfig as any).databaseURL || '',
+};
+
 // Initialize Firebase App
-export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+export const app = getApps().length === 0 ? initializeApp(effectiveFirebaseConfig) : getApp();
 
 // Initialize Firestore
-export const firestore: Firestore = firebaseConfig.firestoreDatabaseId
-  ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
+export const firestore: Firestore = effectiveFirebaseConfig.firestoreDatabaseId
+  ? getFirestore(app, effectiveFirebaseConfig.firestoreDatabaseId)
   : getFirestore(app);
 
 // Initialize Realtime Database
-// Uses configured databaseURL or defaults to project RTDB URL
 const rtdbUrl =
-  (firebaseConfig as any).databaseURL ||
-  `https://${firebaseConfig.projectId}-default-rtdb.firebaseio.com`;
+  effectiveFirebaseConfig.databaseURL ||
+  (effectiveFirebaseConfig.projectId ? `https://${effectiveFirebaseConfig.projectId}-default-rtdb.firebaseio.com` : undefined);
 
 export let realtimeDb: Database | null = null;
 try {
-  realtimeDb = getDatabase(app, rtdbUrl);
+  realtimeDb = rtdbUrl ? getDatabase(app, rtdbUrl) : getDatabase(app);
 } catch (e) {
   try {
     realtimeDb = getDatabase(app);

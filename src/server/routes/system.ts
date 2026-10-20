@@ -27,9 +27,14 @@ router.get('/status', (_req: Request, res: Response) => {
     },
     demoAccounts: [
       { role: 'Admin', email: 'admin@legalconnect.com', password: 'AdminPass123!' },
+      { role: 'Client', email: 'client@legalconnect.com', password: 'ClientPass123!' },
+      { role: 'Client (Sarah)', email: 'client.sarah@example.com', password: 'ClientPass123!' },
       { role: 'Lawyer (Corporate)', email: 'rajesh.lawyer@example.com', password: 'LawyerPass123!' },
       { role: 'Lawyer (IP & Tech)', email: 'elena.lawyer@example.com', password: 'LawyerPass123!' },
-      { role: 'Client', email: 'client.sarah@example.com', password: 'ClientPass123!' },
+      { role: 'Lawyer (Criminal)', email: 'marcus.lawyer@example.com', password: 'LawyerPass123!' },
+      { role: 'Lawyer (Family)', email: 'maya.lawyer@example.com', password: 'LawyerPass123!' },
+      { role: 'Lawyer (Real Estate)', email: 'david.lawyer@example.com', password: 'LawyerPass123!' },
+      { role: 'Lawyer (Cyber Law)', email: 'priya.lawyer@example.com', password: 'LawyerPass123!' },
     ],
   });
 });

@@ -271,14 +271,52 @@ router.post('/demo-login', async (req: Request, res: Response) => {
   try {
     const { role } = req.body; // 'client' | 'lawyer' | 'admin'
 
-    let targetEmail = 'client.sarah@example.com';
-    if (role === 'admin') targetEmail = 'admin@legalconnect.com';
-    if (role === 'lawyer') targetEmail = 'rajesh.lawyer@example.com';
+    let user = null;
+    if (role === 'admin') {
+      user = await DataStore.findUserByEmail('admin@legalconnect.com');
+    } else if (role === 'lawyer') {
+      user = await DataStore.findUserByEmail('rajesh.lawyer@example.com');
+      if (!user) {
+        const allUsers = await DataStore.getAllUsers();
+        user = allUsers.find((u) => u.role === 'lawyer') || null;
+      }
+    } else {
+      user =
+        (await DataStore.findUserByEmail('client@legalconnect.com')) ||
+        (await DataStore.findUserByEmail('client.sarah@example.com'));
+      if (!user) {
+        const allUsers = await DataStore.getAllUsers();
+        user = allUsers.find((u) => u.role === 'client') || null;
+      }
+    }
 
-    const user = await DataStore.findUserByEmail(targetEmail);
+    // If still no user exists for this role, auto-generate a valid user
     if (!user) {
-      res.status(404).json({ error: `Demo user for role '${role}' not found. Please run seed script.` });
-      return;
+      const salt = await bcrypt.genSalt(10);
+      const passwordHash = await bcrypt.hash('ClientPass123!', salt);
+      user = await DataStore.createUser({
+        name: role === 'lawyer' ? 'Adv. Default Legal Counsel' : 'Verified Client',
+        email: `${role}@legalconnect.com`,
+        passwordHash,
+        role,
+        phone: '+1 (555) 019-2834',
+        city: 'New York',
+      });
+      if (role === 'lawyer') {
+        await DataStore.createLawyer({
+          userId: user._id,
+          barRegistrationNumber: 'NY-BAR-2016-99211',
+          barCouncilState: 'New York',
+          yearOfAdmission: 2016,
+          verificationStatus: 'approved',
+          primaryDomain: 'Corporate & Commercial',
+          practiceAreas: ['Corporate & Commercial'],
+          consultationFee: 150,
+          consultationDurationMinutes: 45,
+          rating: 5.0,
+          reviewCount: 1,
+        });
+      }
     }
 
     let lawyer = null;

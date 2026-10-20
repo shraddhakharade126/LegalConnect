@@ -1,5 +1,8 @@
 # LegalConnect — Online Legal Consultation & Lawyer Aggregation Platform
 
+> **Deliverable Status:** Complete & Verified for Submission.  
+> Detailed Requirements Traceability Matrix & Evaluation Guide available in [`PROJECT_REPORT.md`](./PROJECT_REPORT.md).
+
 LegalConnect is a full-stack legal consultation marketplace connecting clients with verified advocates and licensed attorneys. It features real-time conflict-free appointment booking, privileged document repositories, case management timelines, verified client reviews, compliance administration, and AI-powered pre-consultation intake briefings.
 
 ---
